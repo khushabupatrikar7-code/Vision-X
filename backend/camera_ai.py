@@ -1,6 +1,7 @@
 import cv2
 import requests
 import time
+from voice import speak
 
 camera = cv2.VideoCapture(0)
 
@@ -42,9 +43,13 @@ while True:
                 files={"image": image}
             )
 
+        result = response.json()
+        description = result["description"]
+
         print("\nVISIONX AI RESULT:")
-        print(response.json()["description"])
-        print()
+        print(description)
+
+        speak(description)
 
         time.sleep(1)
 
