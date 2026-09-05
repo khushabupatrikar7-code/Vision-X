@@ -26,9 +26,12 @@ while True:
     if key == ord("q"):
         break
 
-    if key == 32:  # SPACE
+    if key == 32:
         filename = "camera_capture.jpg"
-        cv2.imwrite(filename, frame)
+
+        # Resize image before sending it to AI
+        small_frame = cv2.resize(frame, (320, 240))
+        cv2.imwrite(filename, small_frame)
 
         print("Image captured!")
         print("Sending image to VisionX AI...")
