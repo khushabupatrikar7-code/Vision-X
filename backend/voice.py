@@ -2,6 +2,7 @@ import asyncio
 import re
 import edge_tts
 import os
+import subprocess
 
 
 VOICE_OPTIONS = {
@@ -38,17 +39,33 @@ async def generate_speech(text, voice_type="male"):
 
 
 def speak(text, voice_type="male"):
-    output_file = asyncio.run(
-        generate_speech(text, voice_type)
-    )
+    clean = clean_text(text)
 
-    print(f"Speech generated using {voice_type} voice.")
+    try:
+        output_file = asyncio.run(
+            generate_speech(clean, voice_type)
+        )
 
-    os.system(f"mpg123 -q '{output_file}'")
+        print(f"Speech generated using {voice_type} voice.")
+
+        subprocess.run(
+            ["mpg123", "-q", output_file],
+            check=False
+        )
+
+    except Exception as e:
+        print("Edge TTS unavailable.")
+        print("Using local voice instead.")
+
+        subprocess.run(
+            ["espeak", "-v", "en-us", clean],
+            check=False
+        )
 
 
 if __name__ == "__main__":
     speak(
-        "Hello. I am VisionX.",
+        "*Hello!* I am VisionX. "
+        "If Edge TTS is unavailable, I can still speak.",
         "male"
     )

@@ -49,7 +49,7 @@ while True:
         print("\nVISIONX AI RESULT:")
         print(description)
 
-        speak(description)
+        speak(description,"male")
 
         time.sleep(1)
 
