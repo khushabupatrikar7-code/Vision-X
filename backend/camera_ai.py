@@ -1,19 +1,69 @@
 import cv2
-import requests
+import ollama
 import time
 from voice import speak
 
 camera = cv2.VideoCapture(0)
 
+camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
 if not camera.isOpened():
     print("Could not open camera")
     exit()
 
-print("Camera is ready.")
-print("Press SPACE to capture an image.")
-print("Press Q to quit.")
+print("================================")
+print("       VISION-X CAMERA")
+print("================================")
+print("SPACE = Describe scene")
+print("R     = Read text")
+print("Q     = Quit")
+print("================================")
+
+processing = False
+
+
+def ask_gemma(filename, mode):
+
+    if mode == "describe":
+        prompt = (
+            "Describe this image for a visually impaired person. "
+            "Focus on important objects, people, surroundings, "
+            "and any clearly visible text. "
+            "Be concise, useful and natural. "
+            "Do not mention formatting symbols."
+        )
+
+    elif mode == "read":
+        prompt = (
+            "Read all clearly visible text in this image. "
+            "Return ONLY the text that you can actually read. "
+            "Do not describe the image. "
+            "Do not guess missing words. "
+            "Do not add explanations."
+        )
+
+    start_time = time.time()
+
+    response = ollama.chat(
+        model="gemma3",
+        keep_alive=-1,
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+                "images": [filename]
+            }
+        ]
+    )
+
+    ai_time = time.time() - start_time
+
+    return response["message"]["content"].strip(), ai_time
+
 
 while True:
+
     success, frame = camera.read()
 
     if not success:
@@ -27,31 +77,93 @@ while True:
     if key == ord("q"):
         break
 
-    if key == 32:
+    # SPACE = Describe
+    if key == 32 and not processing:
+
+        processing = True
+
         filename = "camera_capture.jpg"
 
-        # Resize image before sending it to AI
-        small_frame = cv2.resize(frame, (320, 240))
-        cv2.imwrite(filename, small_frame)
+        cv2.imwrite(filename, frame)
 
-        print("Image captured!")
-        print("Sending image to VisionX AI...")
+        print("\n📷 Image captured!")
+        print("👁️ VisionX is analyzing the scene...")
 
-        with open(filename, "rb") as image:
-            response = requests.post(
-                "http://127.0.0.1:5000/upload",
-                files={"image": image}
+        try:
+            description, ai_time = ask_gemma(
+                filename,
+                "describe"
             )
 
-        result = response.json()
-        description = result["description"]
+            print(f"\nAI processing time: {ai_time:.2f} seconds")
 
-        print("\nVISIONX AI RESULT:")
-        print(description)
+            print("\nVISIONX:")
+            print(description)
 
-        speak(description,"male")
+            print("\n🔊 Speaking...")
+            speak(description, "male")
 
-        time.sleep(1)
+        except Exception as e:
+
+            print("\nVisionX error:")
+            print(e)
+
+        finally:
+
+            processing = False
+            print("\nReady.")
+            print("SPACE = Describe | R = Read | Q = Quit")
+
+
+    # R = Read text
+    if key == ord("r") and not processing:
+
+        processing = True
+
+        filename = "camera_read.jpg"
+
+        cv2.imwrite(filename, frame)
+
+        print("\n📷 Image captured!")
+        print("📖 VisionX is reading the text...")
+
+        try:
+
+            text, ai_time = ask_gemma(
+                filename,
+                "read"
+            )
+
+            print(f"\nAI processing time: {ai_time:.2f} seconds")
+
+            if text:
+
+                print("\nVISIONX READ:")
+                print(text)
+
+                print("\n🔊 Speaking...")
+                speak(text, "male")
+
+            else:
+
+                print("\nNo readable text found.")
+
+                speak(
+                    "I could not read any text.",
+                    "male"
+                )
+
+        except Exception as e:
+
+            print("\nVisionX error:")
+            print(e)
+
+        finally:
+
+            processing = False
+            print("\nReady.")
+            print("SPACE = Describe | R = Read | Q = Quit")
+
 
 camera.release()
 cv2.destroyAllWindows()
