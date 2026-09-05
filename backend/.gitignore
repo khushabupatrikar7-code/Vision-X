@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# Ollama installer files
+ollama.tar.zst
+ollama-install.sh
+
+# Generated images
+received_images/
