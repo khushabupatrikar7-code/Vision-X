@@ -1,19 +1,54 @@
-import pyttsx3
+import asyncio
 import re
-
-engine = pyttsx3.init()
-
-engine.setProperty("rate", 150)
-engine.setProperty("volume", 1.0)
+import edge_tts
+import os
 
 
-def speak(text):
-    # Remove Markdown symbols before speaking
-    clean_text = re.sub(r"[*_#`]", "", text)
+VOICE_OPTIONS = {
+    "male": "en-US-GuyNeural",
+    "female": "en-US-JennyNeural"
+}
 
-    engine.say(clean_text)
-    engine.runAndWait()
+
+def clean_text(text):
+    text = re.sub(r"[*_#`]", "", text)
+    text = re.sub(r"[•▪◦]", "", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+async def generate_speech(text, voice_type="male"):
+    clean = clean_text(text)
+
+    selected_voice = VOICE_OPTIONS.get(
+        voice_type,
+        VOICE_OPTIONS["male"]
+    )
+
+    output_file = "visionx_speech.mp3"
+
+    communicate = edge_tts.Communicate(
+        text=clean,
+        voice=selected_voice
+    )
+
+    await communicate.save(output_file)
+
+    return output_file
+
+
+def speak(text, voice_type="male"):
+    output_file = asyncio.run(
+        generate_speech(text, voice_type)
+    )
+
+    print(f"Speech generated using {voice_type} voice.")
+
+    os.system(f"mpg123 -q '{output_file}'")
 
 
 if __name__ == "__main__":
-    speak("VisionX is working. I can describe what I see.")
+    speak(
+        "Hello. I am VisionX.",
+        "male"
+    )

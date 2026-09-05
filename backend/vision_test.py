@@ -6,7 +6,7 @@ response = ollama.chat(
         {
             "role": "user",
             "content": "Describe what you see in this image in simple language.",
-            "images": ["test_image.jpg"]
+            "images": ["camera_capture.jpg"]
         }
     ]
 )
